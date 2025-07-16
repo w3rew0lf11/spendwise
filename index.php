@@ -1,4 +1,4 @@
-<?php include('header.php'); ?>
+<?php require './includes/header.php'; ?>
 
 <?php if (isset($_GET['message'])): ?>
     <div class="alert alert-error">
@@ -222,7 +222,7 @@
 
         <span class="close-modal">&times;</span>
         <h2 class="modal-title">Create Your Account</h2>
-        <form id="signup-form" method="POST" action="includes/registrationProcess.php">
+        <form id="signup-form" method="POST" action="./auth/registrationProcess.php">
 
             <div class="form-group">
                 <label for="signup-name">First Name</label>
@@ -261,7 +261,7 @@
     <div class="modal-content">
         <span class="close-modal">&times;</span>
         <h2 class="modal-title">Welcome Back</h2>
-        <form id="login-form" method="POST" action="includes/loginProcess.php">
+        <form id="login-form" method="POST" action="./auth/loginProcess.php">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="login-username" placeholder="username" name="username" required>
@@ -279,4 +279,4 @@
     </div>
 </div>
 
-<?php include('footer.php'); ?>
+<?php include('./includes/footer.php'); ?>
