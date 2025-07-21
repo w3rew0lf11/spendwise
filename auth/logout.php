@@ -8,6 +8,6 @@ $_SESSION = array();
 session_destroy();
 
 // Redirect to login page
-header("Location: index.php?success=You have been logged out successfully");
+header("Location:/spendwise/index.php?success=You have been logged out successfully");
 exit();
 ?>
