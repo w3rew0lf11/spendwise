@@ -15,7 +15,7 @@ $total_expense_data = $db->select("SELECT SUM(amount) AS total FROM expenses WHE
 $total_expense = $total_expense_data[0]['total'] ?? 0;
 
 $recent_expenses = $db->select(
-    "SELECT id, description as title, amount, amountInUSD, category, date FROM expenses WHERE user_id = ? ORDER BY date DESC",
+    "SELECT id, description as title, amount, amountInUSD, category, currency, date FROM expenses WHERE user_id = ? ORDER BY date DESC",
     [$user_id]
 );
 ?>
@@ -205,7 +205,7 @@ $recent_expenses = $db->select(
             <td><?= htmlspecialchars($row['date']) ?></td>
             <td><?= htmlspecialchars($row['title']) ?></td>
             <td><?= htmlspecialchars($row['category']) ?></td>
-            <td style="color:#EF4444;">Rs. <?= number_format($row['amount'], 2) ?></td>
+            <td style="color:#EF4444;"> <?= htmlspecialchars($row['currency']) . ' ' . number_format($row['amount'], 2) ?></td>
             <td>$<?= htmlspecialchars($row['amountInUSD']) ?></td>
             <td>
               <a href="editExpense.php?id=<?= $row['id'] ?>" class="btn btn-primary">Edit</a>

@@ -7,17 +7,14 @@ if (isset($_POST["login"])) {
     $username = trim($_POST["username"]);
     $password = $_POST["password"];
 
-    // Initialize DB instance
     $db = new DB();
 
-    // Fetch user by username
     $user = $db->select("SELECT * FROM auth WHERE username = ?", [$username]);
 
     if ($user) {
-        $user = $user[0]; // Assuming select returns an array of results
-
+        $user = $user[0]; 
         if (password_verify($password, $user['password'])) {
-            // Set session variables
+
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['logged_in'] = true;

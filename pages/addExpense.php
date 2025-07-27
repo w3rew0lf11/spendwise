@@ -10,7 +10,6 @@ if (!$user_id) {
     exit;
 }
 
-// Fetch user info for sidebar
 $user = $db->select("SELECT firstname, lastname, username FROM auth WHERE id = ?", [$user_id]);
 if (!$user) die("User not found.");
 
@@ -34,7 +33,6 @@ $username = htmlspecialchars($user[0]['username']);
       display: flex;
     }
     
-    /* Sidebar styles */
     .sidebar {
       width: 250px;
       background: #1E293B;

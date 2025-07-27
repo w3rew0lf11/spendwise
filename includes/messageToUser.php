@@ -1,8 +1,7 @@
 <?php
 if (isset($_GET['message'])) {
-    $type = $_GET['type'] ?? 'info'; // default type
+    $type = $_GET['type'] ?? 'info';
 
-    // Map type to color (for simple inline style)
     $color = match ($type) {
         'success' => 'green',
         'error' => 'red',
@@ -33,11 +32,10 @@ if (isset($_GET['message'])) {
     const flashMessage = document.getElementById('flash-message');
     if (flashMessage) {
       setTimeout(() => {
-        // Fade out effect
+        
         flashMessage.style.transition = 'opacity 0.5s ease';
         flashMessage.style.opacity = '0';
 
-        // Remove element from DOM after fade out
         setTimeout(() => {
           flashMessage.remove();
         }, 500);

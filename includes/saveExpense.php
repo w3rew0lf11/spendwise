@@ -12,7 +12,10 @@ function convertToUSD($fromCurrency, $amount)
     if ($response === false) {
         throw new Exception("Unable to reach exchangerate.host.");
     }
-
+ //  echo "<pre>";
+    // print_r($url);
+    //  echo "<pre>";
+    //  exit();
     $data = json_decode($response, true);
     if (isset($data['result'])) {
         return round($data['result'], 2);
@@ -38,20 +41,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $description = trim($_POST['description'] ?? '');
     $receipt_path = null;
 
-    // ✅ Basic validation
     if (!$amount || !is_numeric($amount) || $amount <= 0 ||
         !$currency || !$category || !$date) {
         header("Location: ../pages/addExpense.php?message=" . urlencode("Missing required fields.") . "&type=error");
         exit();
     }
 
-    // ✅ Validate future date
     if (new DateTime($date) > new DateTime()) {
         header("Location: ../pages/addExpense.php?message=" . urlencode("Date cannot be in the future.") . "&type=error");
         exit();
     }
 
-    // ✅ Handle file upload
     if (isset($_FILES['receipt']) && $_FILES['receipt']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = '../uploads/';
         if (!file_exists($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -65,7 +65,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // ✅ Convert amount to USD
     try {
         $amountInUSD = convertToUSD($currency, $amount);
     } catch (Exception $e) {
@@ -75,7 +74,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     try {
         if ($expense_id) {
-            // 🟣 UPDATE existing expense
             $params = [$amount, $currency, $amountInUSD, $category, $date, $description, $user_id, $expense_id];
             $sql = "UPDATE expenses SET amount=?, currency=?, amountInUSD=?, category=?, date=?, description=? WHERE user_id=? AND id=?";
             $db->update($sql, $params);
@@ -86,7 +84,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             header("Location: ../pages/dashboard.php?message=" . urlencode("Expense updated.") . "&type=success");
         } else {
-            // 🟢 INSERT new expense
             $sql = "INSERT INTO expenses (user_id, amount, currency, amountInUSD, category, date, description, receipt_path)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             $db->create($sql, [$user_id, $amount, $currency, $amountInUSD, $category, $date, $description, $receipt_path]);

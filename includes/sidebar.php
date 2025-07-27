@@ -1,5 +1,4 @@
 <?php
-// Fetch user info from DB before output
 $user = $db->select("SELECT firstname, lastname, username FROM auth WHERE id = ?", [$user_id]);
 if (!$user) {
     die("User not found.");

@@ -9,7 +9,6 @@ if (isset($_POST["register"])) {
     $password = $_POST["password"];
     $confirm_password = $_POST["confirm_password"];
 
-    // Basic password validation
     if (strlen($password) < 8) {
         header("Location: ../index.php?message=Password must be at least 8 characters long");
         exit();
@@ -20,10 +19,8 @@ if (isset($_POST["register"])) {
         exit();
     }
 
-    // Initialize DB instance
     $db = new DB();
 
-    // Check if username is already taken
     $existingUser = $db->select("SELECT * FROM auth WHERE username = ?", [$username]);
 
     if ($existingUser) {
@@ -31,10 +28,8 @@ if (isset($_POST["register"])) {
         exit();
     }
 
-    // Hash the password
     $hashed_password = password_hash($password, PASSWORD_BCRYPT);
 
-    // Insert into database
     try {
         $db->create("INSERT INTO auth (firstname, lastname, username, password) VALUES (?, ?, ?, ?)", [
             $firstname, $lastname, $username, $hashed_password

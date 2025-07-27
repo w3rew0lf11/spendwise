@@ -1,7 +1,7 @@
 <?php 
 class DB {
    private $host = 'localhost';
-    private $dbname = 'spendwise_db';
+    private $dbname = 'spendwise';
     private $username = 'root';
     private $password = '';
     private $conn;
