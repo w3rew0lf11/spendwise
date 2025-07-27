@@ -1,192 +1,337 @@
-<?php 
-require_once('../includes/session_check.php');
+<?php
+require '../config/database.php';
+require_once '../includes/session_check.php';
+
+$db = new DB();
+$user_id = $_SESSION['user_id'] ?? null;
+if (!$user_id) {
+    header("Location: login.php");
+    exit;
+}
+
+// Fetch user info
+$user = $db->select("SELECT firstname, lastname, username FROM auth WHERE id = ?", [$user_id]);
+if (!$user) die("User not found.");
+
+$full_name = htmlspecialchars($user[0]['firstname'] . ' ' . $user[0]['lastname']);
+$username = htmlspecialchars($user[0]['username']);
+
+// Total expenses
+$total_expense_data = $db->select("SELECT SUM(amount) AS total FROM expenses WHERE user_id = ?", [$user_id]);
+$total_expense = $total_expense_data[0]['total'] ?? 0;
+
+// Recent expenses (latest 5)
+$recent_expenses = $db->select(
+    "SELECT description as title, amount, amountInUSD, category, date FROM expenses WHERE user_id = ? ORDER BY date DESC ",
+    [$user_id]
+);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpendWise Dashboard</title>
-  <link rel="stylesheet" href="/spendwise/css/dashboard.css" />
-  <link rel="stylesheet" href="/spendwise/css/sidebar.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-</head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard – SpendWise</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <style>
+    body { 
+      margin:0; 
+      font-family:'Segoe UI',sans-serif; 
+      background:#0F172A; 
+      color:#CBD5E1;
+      display: flex;
+    }
+    
+    /* Sidebar styles */
+    .sidebar {
+      width: 250px;
+      background: #1E293B;
+      height: 100vh;
+      position: fixed;
+      padding: 20px;
+      box-sizing: border-box;
+      border-right: 1px solid #334155;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 30px;
+      color: #6366F1;
+      padding: 10px;
+    }
+    
+    .nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .nav-links a {
+      color: #CBD5E1;
+      text-decoration: none;
+      padding: 10px;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+    
+    .nav-links a:hover {
+      background: #334155;
+    }
+    
+    .logout-section {
+      position: absolute;
+      bottom: 20px;
+      width: calc(100% - 40px);
+    }
+    
+    .logout-btn {
+      display: block;
+      background: #EF4444;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+    
+    .profile-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 30px;
+      padding: 10px;
+      background: #334155;
+      border-radius: 5px;
+    }
+    
+    .profile-icon {
+      width: 40px;
+      height: 40px;
+      background: #6366F1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    
+    .profile-info {
+      font-size: 14px;
+    }
+    
+    .profile-info .name {
+      font-weight: bold;
+    }
+    
+    /* Main content styles */
+    .main-content {
+      margin-left: 250px;
+      width: calc(100% - 250px);
+      padding: 30px;
+      box-sizing: border-box;
+    }
+    
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .card {
+      background:#1E293B;
+      border:1px solid #334155;
+      border-radius:8px;
+      padding:20px;
+    }
+    
+    .table {
+      width:100%;
+      border-collapse:collapse;
+    }
+    
+    .table th, .table td {
+      padding:12px;
+      border-bottom:1px solid #334155;
+    }
+    
+    .table th {
+      background:#1E293B;
+      font-weight:600;
+    }
+    
+    .chart-container {
+      position:relative;
+      height:300px;
+      width:100%;
+    }
+    
+    .chart-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .chart-tab {
+      padding: 8px 16px;
+      background: #334155;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .chart-tab.active {
+      background: #6366F1;
+    }
+  </style>
+</head>
 <body>
-  <div class="container">
-    <!-- Sidebar -->
-     <div class="sidebar">
-     <?php include('../includes/sidebar.php'); ?>
-     </div>
-      <hr>
-      <div class="user">
-        <img src="https://via.placeholder.com/40" alt="Avatar" />
-        <div>
-          <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
-          <p>
-            <?php 
-              echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'No username available';
-            ?>
-          </p>
-        </div>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">SpendWise</div>
+    
+    <div class="profile-section">
+      <div class="profile-icon"><?= strtoupper(substr($user[0]['firstname'], 0, 1)) ?></div>
+      <div class="profile-info">
+        <div class="name"><?= $full_name ?></div>
+        <div class="username">@<?= $username ?></div>
       </div>
-
-    <!-- Main Content -->
-    <main class="dashboard">
-      <h2>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h2>
-
-
-      <div class="top-row">
-        
-        <!-- Pie Chart Card -->
-        <div class="card spending">
-         <p>Total Spending</p>
-         <canvas id="pieChart" width="100%" height="100"></canvas>
-        </div>
-        <!-- <div class="card chart">
-          <p>By Category</p>
-          <ul class="category-list">
-            <li><span class="dot food"></span> Food - $420.50</li>
-            <li><span class="dot travel"></span> Travel - $315.75</li>
-            <li><span class="dot shopping"></span> Shopping - $280.30</li>
-            <li><span class="dot bills"></span> Bills - $150.00</li>
-            <li><span class="dot other"></span> Other - $79.12</li>
-          </ul>
-        </div> -->
-        <!-- Line Chart Card -->
-        <div class="card chart">
-        <p>By Category</p>
-        <canvas id="lineChart" width="100%" height="100"></canvas>
-</div>
-      </div>
-
-      <div class="expenses-section">
-        <div class="header">
-          <h3>Recent Expenses</h3>
-          <a href="#">Monthly Spending Trend</a>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>May 15, 2023</td>
-              <td><span class="badge food">Food</span></td>
-              <td>Dinner at Italian Restaurant</td>
-              <td>$45.60</td>
-              <td><i class="fas fa-edit"></i> <i class="fas fa-trash-alt"></i></td>
-            </tr>
-            <tr>
-              <td>May 14, 2023</td>
-              <td><span class="badge travel">Travel</span></td>
-              <td>Train tickets</td>
-              <td>$32.50</td>
-              <td><i class="fas fa-edit"></i> <i class="fas fa-trash-alt"></i></td>
-            </tr>
-            <tr>
-              <td>May 13, 2023</td>
-              <td><span class="badge shopping">Shopping</span></td>
-              <td>New shoes</td>
-              <td>$69.99</td>
-              <td><i class="fas fa-edit"></i> <i class="fas fa-trash-alt"></i></td>
-            </tr>
-            <tr>
-              <td>May 12, 2023</td>
-              <td><span class="badge bills">Bills</span></td>
-              <td>Electricity bill</td>
-              <td>$75.00</td>
-              <td><i class="fas fa-edit"></i> <i class="fas fa-trash-alt"></i></td>
-            </tr>
-            <tr>
-              <td>May 10, 2023</td>
-              <td><span class="badge food">Food</span></td>
-              <td>Groceries</td>
-              <td>$62.30</td>
-              <td><i class="fas fa-edit"></i> <i class="fas fa-trash-alt"></i></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </main>
+    </div>
+    
+    <nav class="nav-links">
+      <a href="/spendwise/pages/dashboard.php">Dashboard</a>
+      <a href="/spendwise/pages/addExpense.php">Add Expense</a>
+      <a href="reports.php">Reports</a>
+      <a href="/spendwise/pages/settings.php">Settings</a>
+    </nav>
+    
+    <div class="logout-section">
+      <a href="/spendwise/auth/logout.php" class="logout-btn">Logout</a>
+    </div>
   </div>
 
-</body>
-</html>
-<script>
-  // Line Chart (Spending by Category over Months)
-  const ctxLine = document.getElementById('lineChart').getContext('2d');
-  const lineChart = new Chart(ctxLine, {
-    type: 'line',
-    data: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'], // You can extend this
-      datasets: [
-        {
-          label: 'Food',
-          data: [100, 120, 130, 150, 160],
-          borderColor: '#FF6384',
-          fill: false
-        },
-        {
-          label: 'Travel',
-          data: [80, 100, 90, 110, 130],
-          borderColor: '#36A2EB',
-          fill: false
-        },
-        {
-          label: 'Shopping',
-          data: [70, 85, 95, 90, 100],
-          borderColor: '#FFCE56',
-          fill: false
-        },
-        {
-          label: 'Bills',
-          data: [50, 55, 60, 65, 70],
-          borderColor: '#4BC0C0',
-          fill: false
-        },
-        {
-          label: 'Other',
-          data: [30, 40, 35, 30, 45],
-          borderColor: '#9966FF',
-          fill: false
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' }
-      }
-    }
-  });
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Dashboard</h1>
+    
+    <!-- Summary Cards -->
+    <div class="card-grid">
+      <div class="card">
+        <h3>Total Expenses</h3>
+        <p style="font-size:28px; color:#EF4444;">Rs. <?= number_format($total_expense, 2) ?></p>
+      </div>
+      
+      <div class="card">
+        <h3>Recent Transactions</h3>
+        <p style="font-size:28px;"><?= count($recent_expenses) ?></p>
+      </div>
+    </div>
+    
+    <!-- Recent Expenses Table -->
+    <div class="card">
+      <h3>Recent Expenses</h3>
+      <?php if ($recent_expenses): ?>
+      <table class="table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Category</th><th>Amount</th><th>Amount IN USD</th></tr>
+        </thead>
+        <tbody>
 
-  // Pie Chart (Total Spending by Category)
-  const ctxPie = document.getElementById('pieChart').getContext('2d');
-  const pieChart = new Chart(ctxPie, {
-    type: 'pie',
-    data: {
-      labels: ['Food', 'Travel', 'Shopping', 'Bills', 'Other'],
-      datasets: [{
-        data: [420.50, 315.75, 280.30, 150.00, 79.12],
-        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' }
+          <?php foreach ($recent_expenses as $row): ?>
+          
+          <tr>
+            <td><?= htmlspecialchars($row['date']) ?></td>
+            <td><?= htmlspecialchars($row['title']) ?></td>
+            <td><?= htmlspecialchars($row['category']) ?></td>
+            <td style="color:#EF4444;">Rs. <?= number_format($row['amount'], 2) ?></td>
+            <td><?= htmlspecialchars($row['amountInUSD'])?></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+      <?php else: ?>
+        <p>No expenses added yet.</p>
+      <?php endif; ?>
+    </div>
+    
+    <!-- Chart Section -->
+    <div class="card">
+      <h3>Expense Visualization</h3>
+      
+      <div class="chart-tabs">
+        <div class="chart-tab active" data-type="pie">By Category</div>
+        <div class="chart-tab" data-type="bar">Monthly</div>
+        <div class="chart-tab" data-type="line">Yearly</div>
+      </div>
+      
+      <div class="chart-container">
+        <canvas id="expenseChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const recentExpenses = <?= json_encode($recent_expenses) ?>;
+  const categoriesData = {};
+  recentExpenses.forEach(e => {
+    categoriesData[e.category] = (categoriesData[e.category] || 0) + parseFloat(e.amount);
+  });
+  const labels = Object.keys(categoriesData);
+  const dataPoints = Object.values(categoriesData);
+  const palette = [
+    'rgba(255,99,132,0.6)','rgba(54,162,235,0.6)',
+    'rgba(255,206,86,0.6)','rgba(75,192,192,0.6)',
+    'rgba(153,102,255,0.6)','rgba(255,159,64,0.6)'
+  ];
+
+  const ctx = document.getElementById('expenseChart').getContext('2d');
+  let chart;
+
+  function drawChart(type) {
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: type,
+      data: {
+        labels,
+        datasets: [{
+          label: `Expenses (${type})`,
+          data: dataPoints,
+          backgroundColor: palette,
+          borderColor: '#6366F1',
+          borderWidth: 1,
+          fill: type === 'line',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#CBD5E1' } }
+        },
+        scales: (type === 'bar' || type === 'line') ? {
+          y: { beginAtZero: true, ticks: { color: '#CBD5E1' }, grid: { color: '#334155' } },
+          x: { ticks: { color: '#CBD5E1' }, grid: { color: '#334155' } }
+        } : {}
       }
-    }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Initialize with pie chart
+    drawChart('pie');
+    
+    // Tab switching
+    const tabs = document.querySelectorAll('.chart-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        drawChart(tab.dataset.type);
+      });
+    });
   });
 </script>
-
+</body>
+</html>

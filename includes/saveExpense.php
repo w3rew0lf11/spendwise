@@ -1,30 +1,19 @@
 <?php
 require '../config/database.php';
+session_start(); 
 
 function convertToUSD($fromCurrency, $amount)
 {
     $fromCurrency = strtoupper($fromCurrency);
-    // https://exchangerate.host/dashboard
-$access_key = '9b8efb036da88ff318b9a4d505a7c1db';
-$url = "https://api.exchangerate.host/convert?from={$fromCurrency}&to=USD&amount={$amount}&access_key={$access_key}";
+    $access_key = '6ef44925cae915c552d209d89e9208ba';
+    $url = "https://api.exchangerate.host/convert?from={$fromCurrency}&to=USD&amount={$amount}&access_key={$access_key}";
 
     $response = file_get_contents($url);
-    //  echo "<pre>";
-    // print_r($url);
-    //  echo "<pre>";
-    //  exit();
-
     if ($response === false) {
         throw new Exception("Unable to reach exchangerate.host.");
     }
 
     $data = json_decode($response, true);
-
-    //  echo "<pre>";
-    // print_r($data);
-    // echo "</pre>";
-    
-
     if (isset($data['result'])) {
         return round($data['result'], 2);
     } else {
@@ -33,42 +22,51 @@ $url = "https://api.exchangerate.host/convert?from={$fromCurrency}&to=USD&amount
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // 🟡 Step 1: Get user_id from session
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: ../pages/login.php?message=" . urlencode("User not logged in.") . "&type=error");
+        exit();
+    }
+    $user_id = $_SESSION['user_id'];
+
     $amount = trim($_POST['amount'] ?? '');
     $currency = trim($_POST['currency'] ?? '');
     $category = trim($_POST['category'] ?? '');
     $date = trim($_POST['date'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $receipt_path = null;
+    echo '<pre>';
+print_r($_SESSION);
+echo '</pre>';
 
-    // Validate required inputs
+
+    // ✅ Input validation
     if (!$amount || !is_numeric($amount) || $amount <= 0) {
-        header("Location: ../pages/addExpense.php?message=" . urlencode("Invalid or missing amount."). "&type=error");
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Invalid or missing amount.") . "&type=error");
         exit();
     }
     if (!$currency) {
-        header("Location: ../pages/addExpense.php?message=" . urlencode("Currency is required."). "&type=error");
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Currency is required.") . "&type=error");
         exit();
     }
     if (!$category) {
-        header("Location: ../pages/addExpense.php?message=" . urlencode("Category is required."). "&type=error");
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Category is required.") . "&type=error");
         exit();
     }
-   if (!$date) {
-    header("Location: ../pages/addExpense.php?message=" . urlencode("Date is required."). "&type=error");
-    exit();
-}
+    if (!$date) {
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Date is required.") . "&type=error");
+        exit();
+    }
 
-// Check if date is in the future
-$currentDate = new DateTime();                // today's date
-$expenseDate = new DateTime($date);           // user input date
+    // ✅ Prevent future dates
+    $currentDate = new DateTime();
+    $expenseDate = new DateTime($date);
+    if ($expenseDate > $currentDate) {
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Date cannot be in the future.") . "&type=error");
+        exit();
+    }
 
-if ($expenseDate > $currentDate) {
-    header("Location: ../pages/addExpense.php?message=" . urlencode("Date cannot be of future."). "&type=error");
-    exit();
-}
-
-
-    // Handle receipt file upload if provided
+    // ✅ Handle file upload
     if (isset($_FILES['receipt']) && $_FILES['receipt']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = '../uploads/';
         if (!file_exists($uploadDir)) {
@@ -84,27 +82,27 @@ if ($expenseDate > $currentDate) {
         }
     }
 
-    // Convert amount to USD
+    // ✅ Convert to USD
     try {
         $amountInUSD = convertToUSD($currency, $amount);
     } catch (Exception $e) {
-        header("Location: ../pages/addExpense.php?message=" . urlencode("Currency conversion failed: " . $e->getMessage()). "&type=error");
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Currency conversion failed: " . $e->getMessage()) . "&type=error");
         exit();
     }
 
-    // Insert into database
+    // ✅ Save to database with user_id
     $db = new DB();
     try {
         $db->create(
-            "INSERT INTO expenses (amount, currency, amountInUSD, category, date, description, receipt_path)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [$amount, $currency, $amountInUSD, $category, $date, $description, $receipt_path]
+            "INSERT INTO expenses (user_id, amount, currency, amountInUSD, category, date, description, receipt_path)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [$user_id, $amount, $currency, $amountInUSD, $category, $date, $description, $receipt_path]
         );
 
-header("Location: ../pages/addExpense.php?message=" . urlencode("Expense recorded successfully.") . "&type=success");
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Expense recorded successfully.") . "&type=success");
         exit();
     } catch (Exception $e) {
-        header("Location: ../pages/addExpense.php?message=" . urlencode("Failed to save expense: " . $e->getMessage()). "&type=error");
+        header("Location: ../pages/addExpense.php?message=" . urlencode("Failed to save expense: " . $e->getMessage()) . "&type=error");
         exit();
     }
 } else {

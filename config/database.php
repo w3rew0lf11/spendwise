@@ -1,12 +1,11 @@
 <?php 
 class DB {
    private $host = 'localhost';
-    private $dbname = 'spendwise';
+    private $dbname = 'spendwise_db';
     private $username = 'root';
     private $password = '';
     private $conn;
     
-
 public function __construct() {
         $this->connect();
     }
