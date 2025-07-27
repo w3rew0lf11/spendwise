@@ -237,28 +237,8 @@ $username = htmlspecialchars($user[0]['username']);
 </head>
 <body>
   <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="logo">SpendWise</div>
-    
-    <div class="profile-section">
-      <div class="profile-icon"><?= strtoupper(substr($user[0]['firstname'], 0, 1)) ?></div>
-      <div class="profile-info">
-        <div class="name"><?= $full_name ?></div>
-        <div class="username">@<?= $username ?></div>
-      </div>
-    </div>
-    
-    <nav class="nav-links">
-      <a href="/spendwise/pages/dashboard.php">Dashboard</a>
-      <a href="/spendwise/pages/addExpense.php">Add Expense</a>
-      <a href="reports.php">Reports</a>
-      <a href="/spendwise/pages/settings.php">Settings</a>
-    </nav>
-    
-    <div class="logout-section">
-      <a href="/spendwise/auth/logout.php" class="logout-btn">Logout</a>
-    </div>
-  </div>
+      <?php require '../includes/sidebar.php'; ?>
+
 
   <!-- Main Content -->
   <div class="main-content">
