@@ -6,7 +6,6 @@ class DB {
     private $password = '';
     private $conn;
     
-
 public function __construct() {
         $this->connect();
     }

@@ -26,15 +26,7 @@
                         <li><a href="#">Integrations</a></li>
                     </ul>
                 </div>
-                <!-- <div class="footer-column">
-                    <h3>Resources</h3>
-                    <ul class="footer-links">
-                        <li><a href="#">Blog</a></li>
-                        <li><a href="#">Guides</a></li>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">API Documentation</a></li>
-                    </ul>
-                </div> -->
+                
                 <div class="footer-column">
                     <h3>Company</h3>
                     <ul class="footer-links">
