@@ -1,4 +1,13 @@
-<?php include('../backend/settingslogic.php'); ?>
+<?php 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+require_once '../includes/session_check.php';
+$user_id = $_SESSION['user_id'];
+
+include('../includes/settingslogic.php');
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +16,6 @@
   <link rel="stylesheet" href="/spendwise/css/sidebar.css">
   <link rel="stylesheet" href="/spendwise/css/settings.css">
   <style>
-    /* Optional CSS if you want to move styles here */
     .profile-pic-preview img {
       width: 100px;
       height: 100px;
@@ -20,17 +28,49 @@
       text-align: center;
       margin-bottom: 20px;
     }
+    
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  padding: 10px;
+  background: #334155;
+  border-radius: 5px;
+}
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  background: #6366f1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.profile-info {
+  font-size: 14px;
+}
+.profile-info .name {
+  font-weight: bold;
+}
+.settings-container {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0F172A;
+      border: 1px solid #334155;
+      border-radius: 5px;
+      color: #CBD5E1;
+      font-size: 15px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="sidebar">
       <?php include('../includes/sidebar.php'); ?>
-    </div>
 
     <div class="settings-container">
 
-      <!-- Profile Picture Preview -->
       <div class="profile-pic-preview">
         <img 
           src="<?php 
@@ -44,7 +84,6 @@
 
       <h2>Account Settings</h2>
 
-      <!-- Display Messages -->
       <?php foreach ($errors as $error): ?>
         <p style="color:red;"><?php echo htmlspecialchars($error); ?></p>
       <?php endforeach; ?>
@@ -52,7 +91,6 @@
         <p style="color:green;"><?php echo htmlspecialchars($msg); ?></p>
       <?php endforeach; ?>
 
-      <!-- Edit Profile -->
       <form action="" method="POST" class="settings-form">
         <input type="hidden" name="form_type" value="update_profile">
         <h3>Edit Profile</h3>
@@ -66,7 +104,6 @@
         <button type="submit">Change Username</button>
       </form>
 
-      <!-- Change Password -->
       <form action="" method="POST" class="settings-form">
         <input type="hidden" name="form_type" value="change_password">
         <h3>Change Password</h3>
@@ -76,7 +113,6 @@
         <button type="submit">Change Password</button>
       </form>
 
-      <!-- Upload Picture -->
       <form action="" method="POST" enctype="multipart/form-data" class="settings-form">
         <input type="hidden" name="form_type" value="upload_picture">
         <h3>Profile Picture</h3>
@@ -84,7 +120,6 @@
         <button type="submit">Upload Picture</button>
       </form>
 
-      <!-- Delete Account -->
       <form action="" method="POST" class="settings-form danger">
         <input type="hidden" name="form_type" value="delete_account">
         <h3>Delete Account</h3>

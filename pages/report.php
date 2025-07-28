@@ -4,6 +4,7 @@ require_once '../includes/session_check.php';
 
 $db = new DB();
 $user_id = $_SESSION['user_id'] ?? null;
+
 if (!$user_id) {
     header("Location: login.php");
     exit;
@@ -16,9 +17,12 @@ $expenses = $db->select(
     [$user_id, $month]
 );
 
-$total = 0;
+
+$totalOriginal = 0;
+$totalUSD = 0;
 foreach ($expenses as $e) {
-    $total += $e['amountInUSD'];
+    $totalOriginal += $e['amount'];
+    $totalUSD += $e['amountInUSD'];
 }
 ?>
 
@@ -54,31 +58,35 @@ foreach ($expenses as $e) {
             color: #6366F1;
             padding: 10px;
         }
-.profile-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 30px;
-  padding: 10px;
-  background: #334155;
-  border-radius: 5px;
-}
-.profile-icon {
-  width: 40px;
-  height: 40px;
-  background: #6366f1;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-}
-.profile-info {
-  font-size: 14px;
-}
-.profile-info .name {
-  font-weight: bold;
-}
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 10px;
+            background: #334155;
+            border-radius: 5px;
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            background: #6366f1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .profile-info {
+            font-size: 14px;
+        }
+
+        .profile-info .name {
+            font-weight: bold;
+        }
 
         .nav-links a {
             display: block;
@@ -122,10 +130,34 @@ foreach ($expenses as $e) {
             color: #ffffff;
         }
 
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="month"] {
+            padding: 8px;
+            border: 1px solid #334155;
+            border-radius: 5px;
+            background: #1E293B;
+            color: #CBD5E1;
+        }
+
+        button[type="submit"] {
+            padding: 8px 16px;
+            background-color: #6366F1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 30px;
+            margin-top: 10px;
             background: #1E293B;
         }
 
@@ -158,10 +190,13 @@ foreach ($expenses as $e) {
         .btn-print:hover {
             opacity: 0.9;
         }
-    </style>
 
-    <!-- ✅ Print-only CSS block must be separate -->
-    <style>
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #94A3B8;
+        }
+
         @media print {
             body * {
                 visibility: hidden;
@@ -180,7 +215,7 @@ foreach ($expenses as $e) {
                 padding: 0;
             }
 
-            .btn-print {
+            .btn-print, form {
                 display: none;
             }
         }
@@ -193,32 +228,54 @@ foreach ($expenses as $e) {
     <div class="main-content">
         <h1>Expense Bill - <?= htmlspecialchars($month) ?></h1>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>Amount (USD)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($expenses as $e): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($e['date']) ?></td>
-                        <td><?= htmlspecialchars($e['description']) ?></td>
-                        <td><?= htmlspecialchars($e['category']) ?></td>
-                        <td style="text-align:right;"><?= number_format($e['amountInUSD'], 2) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3">Total</td>
-                    <td style="text-align:right;"><?= number_format($total, 2) ?></td>
-                </tr>
-            </tfoot>
-        </table>
+        <form method="get">
+            <label for="month">Select Month:</label>
+            <input type="month" id="month" name="month" value="<?= htmlspecialchars($month) ?>" required>
+            <button type="submit">Filter</button>
+        </form>
+
+        <?php if (count($expenses) > 0): ?>
+           <table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th> 
+            <th>Amount (USD)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($expenses as $e): ?>
+            <tr>
+                <td><?= htmlspecialchars($e['date']) ?></td>
+                <td><?= htmlspecialchars($e['description']) ?></td>
+                <td><?= htmlspecialchars($e['category']) ?></td>
+                <td style="text-align:right;">
+                    <?= htmlspecialchars($e['currency']) . ' ' . number_format($e['amount'], 2) ?>
+                </td>
+                <td style="text-align:right;">
+                    <?= number_format($e['amountInUSD'], 2) ?>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+    <tfoot>
+        <tr>
+<td colspan="3" style="text-align: center; font-weight: bold;">Total</td>
+            <td style="text-align:right; font-weight: bold;">
+                <?=htmlspecialchars($e['currency']) . ' ' . number_format($totalOriginal, 2) ?>
+            </td>
+            <td style="text-align:right; font-weight: bold;">
+                <?= 'USD ' . number_format($totalUSD, 2) ?>
+            </td>
+        </tr>
+    </tfoot>
+</table>
+
+        <?php else: ?>
+            <div class="no-data">No expenses found for <?= htmlspecialchars($month) ?>.</div>
+        <?php endif; ?>
 
         <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
     </div>
