@@ -225,9 +225,15 @@ $recent_expenses = $db->select(
     <div class="card">
       <h3>Expense Visualization</h3>
       <div class="chart-tabs">
+<<<<<<< HEAD
+        <div class="chart-tab active" data-type="pie">Pie-chart</div>
+        <div class="chart-tab" data-type="bar">Bar_Graph</div>
+        <div class="chart-tab" data-type="line">Line_Graph</div>
+=======
         <div class="chart-tab active" data-type="pie">By Category</div>
         <div class="chart-tab" data-type="bar">Monthly</div>
         <div class="chart-tab" data-type="line">Yearly</div>
+>>>>>>> ba9c53cad7537c18f7aa26a3925bdbeb5deae306
       </div>
       <div class="chart-container">
         <canvas id="expenseChart"></canvas>
